@@ -62,6 +62,7 @@ class UI {
     });
     productsDOM.innerHTML = result;
   }
+
   getBagButtons() {
     const buttons = [...document.querySelectorAll(".bag-btn")];
     buttonsDOM = buttons;
@@ -90,6 +91,7 @@ class UI {
       });
     });
   }
+
   setCartValues(cart) {
     let tempTotal = 0;
     let itemsTotal = 0;
@@ -100,6 +102,7 @@ class UI {
     cartTotal.innerText = parseFloat(tempTotal.toFixed(2));
     cartItems.innerText = itemsTotal;
   }
+
   addCartItem(item) {
     const div = document.createElement("div");
     div.classList.add("cart-item");
@@ -117,9 +120,48 @@ class UI {
    `;
     cartContent.appendChild(div);
   }
+
   showCart() {
     cartOverlay.classList.add("transparentBcg");
     cartDOM.classList.add("showCart");
+  }
+  setupAPP() {
+    cart = Storage.getCart();
+    this.setCartValues(cart);
+    this.populateCart(cart);
+    cartBtn.addEventListener("click", this.showCart);
+    closeCartBtn.addEventListener("click", this.hideCart);
+  }
+  populateCart(cart) {
+    cart.forEach((item) => this.addCartItem(item));
+  }
+  hideCart() {
+    cartDOM.classList.remove("showCart");
+    cartOverlay.classList.remove("transparentBcg");
+  }
+  cartLogic() {
+    clearCartBtn.addEventListener("click", () => {
+      this.clearCart();
+    });
+  }
+  clearCart() {
+    let cartItems = cart.map((item) => item.id);
+    cartItems.forEach((id) => this.removeItem(id));
+    while (cartContent.children.len > 0) {
+      cartContent.removeChild(cartContent.children[0]);
+    }
+    this.hideCart();
+  }
+  removeItem(id) {
+    cart = cart.filter((item) => item.id !== id);
+    this.setCartValues(cart);
+    Storage.saveCart(cart);
+    let button = this.getSingleButton(id);
+    button.disabled = false;
+    button.innerHTML = `<i class="fas fa=shopping-cart>add to cart</i>`;
+  }
+  getSingleButton(id) {
+    return buttonsDOM.find((button) => button.dataset.id === id);
   }
 }
 
@@ -136,12 +178,18 @@ class Storage {
   static saveCart(cart) {
     localStorage.setItem("cart", JSON.stringify(cart));
   }
+  static getCart() {
+    return localStorage.getItem("cart")
+      ? JSON.parse(localStorage.getItem("cart"))
+      : [];
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const ui = new UI();
   const products = new Products();
-
+  //setup
+  ui.setupAPP();
   //get all products
   products
     .getProducts()
@@ -149,10 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ui.displayProducts(products);
       Storage.saveProducts(products);
       ui.getBagButtons();
+      ui.cartLogic();
     })
     .then();
-});
-closeCartBtn.addEventListener("click", () => {
-  cartDOM.classList.remove("showCart");
-  cartOverlay.classList.remove("transparentBcg");
 });
